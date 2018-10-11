@@ -229,7 +229,7 @@ from tqdm import tqdm
 if __name__ == "__main__":
     print('started parsing')
     data_folder = '../../../Data/hw1/'
-    processed_folder = data_folder + 'new_data/text_documents_bs4/'
+    processed_folder = data_folder + 'new_data/text_documents_2/'
 
 
     documents = pickle.load(open(data_folder + 'documents.pkl', 'rb'))#get_documents(data_folder)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     for d in documents:
         d.data_path = data_folder
 
-    pool = Pool(16)
+    pool = Pool(8)
 
     tasks = list(zip(documents, [processed_folder] * len(documents)))
 

@@ -259,13 +259,19 @@ class YandexModel:
 
     def full_phrase_score(self, tokens,tokens_idxs, doc_id):
         doc_parts = load_doc_txt(doc_id, processed_folder)
-        doc_tokens = doc_parts[TEXT]
-        match = find_subsequence_match(tokens, doc_tokens)
-        match_count = len(match)
+        doc_tokens_text = doc_parts[TEXT]
+        doc_tokens_title = doc_parts[TITLE]
+        match_text = find_subsequence_match(tokens, doc_tokens_text)
+        match_title = find_subsequence_match(tokens, doc_tokens_title)
+
+        match_count_text = len(match_text)
+        match_count_title = len(match_title)
+
+        tf = match_count_text + 3.0 * match_count_title
 
         cur_log_icf = self.log_icf_unigram[tokens_idxs]
         score = cur_log_icf[cur_log_icf > self.median_icf / 2.0].sum()
-        score = score * match_count/ (1.0 + match_count)
+        score = score * tf/ (1.0 + tf)
 
         return score
 
