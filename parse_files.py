@@ -105,7 +105,12 @@ def html2text(raw_html):
 
     text_inscr = get_text(raw_html)
     text_bs = bs4_text_from_html(raw_html)
-    text = max([text_bs, text_inscr], key=lambda x: len(x))
+
+    text = ''
+    if len(text_inscr) == 0:
+        text = text_bs
+    else:
+        text = text_inscr
 
     #
     # if TEXT_EXTRACTOR_TYPE in ['inscriptis']:

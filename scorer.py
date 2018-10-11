@@ -257,8 +257,8 @@ class YandexModel:
         score *= self.nmiss_penalty ** nmiss
         return score
 
-    def full_phrase_score(self, tokens,tokens_idxs, doc_id):
-        doc_parts = load_doc_txt(doc_id, processed_folder)
+    def full_phrase_score(self, tokens,tokens_idxs, doc_parts:dict):
+
         doc_tokens_text = doc_parts[TEXT]
         doc_tokens_title = doc_parts[TITLE]
         match_text = find_subsequence_match(tokens, doc_tokens_text)
@@ -275,9 +275,36 @@ class YandexModel:
 
         return score
 
+    def half_phrase_score(self, tokens, tokens_idxs, doc_parts:dict):
+        doc_tokens_text = doc_parts[TEXT]
+        doc_tokens_title = doc_parts[TITLE]
+
+        query_half_len = int(len(tokens)/2.0)
+
+        match_count_text = []
+        match_count_title = []
+
+        query_halfs, _, _ = get_ngrams(tokens,  query_half_len, inverted = False, with_gap = False)
+        for half in query_halfs:
+            match_count_text.append(len(find_subsequence_match(half, doc_tokens_text)))
+            match_count_title.append(len(find_subsequence_match(half, doc_tokens_title)))
+
+        match_count_title = max(match_count_title)
+        match_count_text = max(match_count_text)
+
+        tf = match_count_text + 3.0 * match_count_title
+        cur_log_icf = self.log_icf_unigram[tokens_idxs]
+        score = cur_log_icf[cur_log_icf > self.median_icf / 2.0].sum()
+        score = score * tf/ (1.0 + tf)
+        return score
+
+
+
     def score_query_doc(self, query: Query, doc_id):
         doc_index = self.doc_ids_map[doc_id]
         doc_len = self.dl[doc_index]
+        doc_parts = load_doc_txt(doc_id, processed_folder)
+
 
         #fwd_index = open_fwd_index(self.fwd_index_folder + str(doc_id) + '.txt')
 
@@ -289,14 +316,15 @@ class YandexModel:
 
         score = 0
         score += self.unigram_score(base_tokens_idxs, doc_index)
-        score += 0.7 * (self.unigram_score(synonim_tokens_idxs, doc_index))
+        score += 0.5 * (self.unigram_score(synonim_tokens_idxs, doc_index))
 
-        score += 0.2 * self.bigram_score(query.base_grams_idxs_list, doc_index)
-        score += 0.2 * 0.7 * self.bigram_score(query.syn_grams_idxs_list , doc_index)
+        score += 0.1 * self.bigram_score(query.base_grams_idxs_list, doc_index)
+        score += 0.1 * 0.5 * self.bigram_score(query.syn_grams_idxs_list , doc_index)
 
-        score += 0.001 * self.all_words_score(base_tokens_idxs, doc_index)
+        #score += 0.001 * self.all_words_score(base_tokens_idxs, doc_index)
 
-        score += 0.1 * self.full_phrase_score(base_tokens, base_tokens_idxs, doc_id)
+        score += 0.1 * self.full_phrase_score(base_tokens, base_tokens_idxs, doc_parts)
+        score += 0.02 * self.half_phrase_score(base_tokens, base_tokens_idxs, doc_parts)
 
 
         # score += self.pairs_weight * self.bigram_score(base_tokens, doc_index)
