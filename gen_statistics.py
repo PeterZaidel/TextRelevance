@@ -26,9 +26,11 @@ class Vocab:
     def __init__(self):
         self.vocab_1 = TwoWayDict()
         self.vocab_2 = TwoWayDict()
+        self.vocab_phrase = TwoWayDict()
 
         self._idx1 = 0
         self._idx2 = 0
+        self._idx_phrase = 0
 
     def add1(self, tkn: str):
         if self.vocab_1.dict.get(tkn, None) is None:
@@ -39,6 +41,11 @@ class Vocab:
         if self.vocab_2.dict.get(gram, None) is None:
             self.vocab_2.add(gram, self._idx2)
             self._idx2 += 1
+
+    def add_phrase(self, phrase: tuple):
+        if self.vocab_phrase.dict.get(phrase, None) is None:
+            self.vocab_phrase.add(phrase, self._idx_phrase)
+            self._idx_phrase += 1
 
 
 
@@ -87,6 +94,9 @@ def load_queries(queries_filename):
         q = queries[q_id]
 
         tokens = q.tokens + q.synonim_tokens
+
+        vocab.add_phrase(tuple(q.tokens))
+
         for tkn in tokens:
             vocab.add1(tkn)
 
@@ -188,6 +198,9 @@ def generate_statistics(doc_id, content_folder, fwd_index_folder, vocab):
         parts_counts_2_raw[p_name] = counts_2_raw.tocsr()
         parts_counts_2_inv[p_name] = counts_2_inv.tocsr()
         parts_counts_2_gap[p_name] = counts_2_gap.tocsr()
+
+
+
 
     save_fwd_index(fwd_index_folder+str(doc_id) + '.txt', fwd_index)
 

@@ -8,6 +8,8 @@ from metrics import calc_ndcg, save_predict, load_predict
 
 from cachetools import cached
 
+from utils import find_subsequence_match
+
 
 from utils import TwoWayDict
 import pickle
@@ -29,12 +31,16 @@ def fill_non_positive(array, val = 1.0):
     return res
 
 class YandexModel:
-    def __init__(self, part_names, part_weights, vocab: Vocab,  k1, k2,
+    def __init__(self, part_names, part_weights, vocab: Vocab,
+                 fwd_index_folder,
+                 k1, k2,
                  synonim_weight = 0.7,
                  nmiss_penalty = 0.03,
                  all_words_weight = 0.2,
                  pairs_weight = 0.3,
                  hdr_weight = 0.2):
+
+        self.fwd_index_folder = fwd_index_folder
         self.vocab = vocab
         self.part_names = part_names
         self._part_name_to_idx = dict(zip(part_names, range(len(part_names))))
@@ -76,9 +82,8 @@ class YandexModel:
 
     def _gen_hdr(self, counts_unigram):
 
-        hdr = np.zeros_like(counts_unigram[TITLE])
-        for pname in [TITLE]:
-            hdr += binarize(counts_unigram[pname])
+       # hdr = np.zeros_like(counts_unigram[TITLE])
+        hdr = counts_unigram[TITLE]
 
         return hdr
 
@@ -120,6 +125,7 @@ class YandexModel:
         pairs_num = counts_bigram_raw[self.part_names[0]].shape[1]
 
         self.tf_unigram = self._gen_tf_unigram(counts_unigram)
+        self.median_tf = np.median(self.tf_unigram)
 
         self.tf_bigram_raw = self._gen_tf_bigram(counts_bigram_raw)
         self.tf_bigram_inv = self._gen_tf_bigram(counts_bigram_inv)
@@ -129,6 +135,7 @@ class YandexModel:
 
         self.icf_unigram = self._gen_icf_unigram(counts_unigram, docs_num, tokens_num)
         self.log_icf_unigram = np.log(fill_non_positive(self.icf_unigram))
+        self.median_icf = np.median(self.log_icf_unigram)
 
         self.dl = doc_lens
         self.indxs_bigrams_to_unigrams = self._gen_bigrams_to_unigrams()
@@ -151,13 +158,32 @@ class YandexModel:
             return  0
 
         tf = self.tf_unigram[doc_index, tokens_idxs]
-        hdr = self.hdr[doc_index, tokens_idxs]
-        hdr[hdr > 0] = 1.0
+        hdr = binarize(self.hdr[doc_index, tokens_idxs])
 
         log_icf = self.log_icf_unigram[tokens_idxs]
 
         score = tf/ (tf + self.k1 + self.dl[doc_index]/ self.k2)
-        score += 0.5 * hdr
+        score += hdr / (1.0 + hdr)
+        score = log_icf * score
+        score = score.sum()
+        return score
+
+    def unigram_score_bm25f(self, tokens_idxs, doc_index):
+        if tokens_idxs.shape[0] == 0:
+            return 0
+
+        tf = self.tf_unigram[doc_index, tokens_idxs]
+        hdr = self.hdr[doc_index, tokens_idxs]
+
+        log_icf = self.log_icf_unigram[tokens_idxs]
+
+        prk = tf + 3.0 * hdr
+
+        b = 0.75
+        k1 = 1.2
+        k2 = 1000
+
+        score = (prk *(k1 + 1))/ (prk + k1 * (1 - b + b * self.dl[doc_index] / k2))
         score = log_icf * score
         score = score.sum()
         return score
@@ -224,14 +250,30 @@ class YandexModel:
         if tokens_idxs.shape[0] == 0:
             return 0
         tf = self.tf_unigram[doc_index, tokens_idxs]
-        nmiss = tokens_idxs.shape[0] - np.argwhere(tf > 0).ravel().shape[0]
-        score = np.log(self.icf_unigram[tokens_idxs]).sum()
+        nmiss = tokens_idxs.shape[0] - np.argwhere(tf > 5).ravel().shape[0]
+
+        cur_log_icf = self.log_icf_unigram[tokens_idxs]
+        score = cur_log_icf[cur_log_icf > self.median_icf/2.0].sum()
         score *= self.nmiss_penalty ** nmiss
+        return score
+
+    def full_phrase_score(self, tokens,tokens_idxs, doc_id):
+        doc_parts = load_doc_txt(doc_id, processed_folder)
+        doc_tokens = doc_parts[TEXT]
+        match = find_subsequence_match(tokens, doc_tokens)
+        match_count = len(match)
+
+        cur_log_icf = self.log_icf_unigram[tokens_idxs]
+        score = cur_log_icf[cur_log_icf > self.median_icf / 2.0].sum()
+        score = score * match_count/ (1.0 + match_count)
+
         return score
 
     def score_query_doc(self, query: Query, doc_id):
         doc_index = self.doc_ids_map[doc_id]
         doc_len = self.dl[doc_index]
+
+        #fwd_index = open_fwd_index(self.fwd_index_folder + str(doc_id) + '.txt')
 
         base_tokens = query.tokens
         base_tokens_idxs = query.base_tokens_idxs#np.array([self.vocab.vocab_1[w] for w in base_tokens])
@@ -241,12 +283,14 @@ class YandexModel:
 
         score = 0
         score += self.unigram_score(base_tokens_idxs, doc_index)
-        score += self.synonim_weight * self.unigram_score(synonim_tokens_idxs, doc_index)
+        score += 0.7 * (self.unigram_score(synonim_tokens_idxs, doc_index))
 
-        score += self.pairs_weight * self.bigram_score(query.base_grams_idxs_list, doc_index)
-        score += self.pairs_weight * self.synonim_weight * self.bigram_score(query.syn_grams_idxs_list , doc_index)
+        score += 0.2 * self.bigram_score(query.base_grams_idxs_list, doc_index)
+        score += 0.2 * 0.7 * self.bigram_score(query.syn_grams_idxs_list , doc_index)
 
-        #score += self.all_words_weight * self.all_words_score(base_tokens_idxs, doc_index)
+        score += 0.001 * self.all_words_score(base_tokens_idxs, doc_index)
+
+        score += 0.1 * self.full_phrase_score(base_tokens, base_tokens_idxs, doc_id)
 
 
         # score += self.pairs_weight * self.bigram_score(base_tokens, doc_index)
@@ -529,7 +573,8 @@ if __name__ == "__main__":
     document_lengths = pickle.load(open(statistics_folder + 'document_lengths.pkl', 'rb'))
 
     yandex_model = YandexModel(part_names=[TEXT, TITLE], part_weights=[1.0, 3.0],
-                                vocab = vocab, k1 = 1.2, k2 = 1000.0, synonim_weight=0.7 )
+                                vocab = vocab, fwd_index_folder=fwd_index_folder,
+                               k1 = 1.2, k2 = 1000.0)
 
     yandex_model.fit(counts_unigram, counts_bigram_raw, counts_bigram_inv,counts_bigram_gap,
                      document_lengths, doc_ids_map)
