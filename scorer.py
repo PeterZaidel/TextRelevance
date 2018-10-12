@@ -143,16 +143,6 @@ class YandexModel:
 
 
 
-        # self.scores_unigram = np.log(icf_unigram) * (self.tf_unigram / (self.tf_unigram + self.k1 + dl[:, None] / self.k2))
-        # self.scores_unigram += np.log(icf_unigram) * (0.2 * hdr / (1.0 + hdr))
-        #
-        # self.log_icf = np.log(icf_unigram)
-        # self.bin_tf = tf_unigram
-        # self.bin_tf[self.bin_tf > 0] = 1.0
-        #
-        # self.scores2 = 0.3 * (np.log(icf_unigram[indxs_bigrams_to_unigrams[:, 0]])
-        #                       + np.log(icf_unigram[indxs_bigrams_to_unigrams[:, 1]])) * tf_bigram / (1.0 + tf_bigram)
-
     def unigram_score(self, tokens_idxs, doc_index):
         if tokens_idxs.shape[0] == 0:
             return  0
@@ -193,12 +183,6 @@ class YandexModel:
 
 
     def bigram_score(self, grams_idxs_list, doc_index):
-        # if tokens.shape[0] == 0:
-        #     return  0
-        #grams, inv_grams, gap_grams = get_ngrams(tokens,ngram=2, inverted=True, with_gap=True)
-        # grams_idxs = [self.vocab.vocab_2[g] for g in grams]
-        # inv_grams_idxs = [self.vocab.vocab_2[g] for g in inv_grams]
-        # gap_grams_idxs = [self.vocab.vocab_2[g] for g in gap_grams]
         grams_idxs, _, _ = grams_idxs_list
 
         tf = 0
@@ -216,35 +200,6 @@ class YandexModel:
         else:
             return 0.0
 
-
-        #
-        # if grams_idxs.shape[0] > 0:
-        #     score_grams = (np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[grams_idxs, 0]])
-        #                      + np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[grams_idxs, 1]])) \
-        #               * self.tf_bigram[doc_index, grams_idxs] / (1.0 + self.tf_bigram[doc_index, grams_idxs])
-        #     score_grams = score_grams.sum()
-        # else:
-        #     score_grams = 0.0
-        #
-        # if inv_grams_idxs.shape[0] >  0:
-        #     score_inv_grams = (np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[inv_grams_idxs, 0]])
-        #                      + np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[inv_grams_idxs, 1]])) \
-        #               * self.tf_bigram[doc_index, inv_grams_idxs] / (1.0 + self.tf_bigram[doc_index, inv_grams_idxs])
-        #     score_inv_grams = score_inv_grams.sum()
-        # else:
-        #     score_inv_grams = 0.0
-        #
-        # if gap_grams_idxs.shape[0] > 0:
-        #     score_gap_grams = (np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[gap_grams_idxs, 0]])
-        #                      + np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[gap_grams_idxs, 1]])) \
-        #               * self.tf_bigram[doc_index, gap_grams_idxs] / (1.0 + self.tf_bigram[doc_index, gap_grams_idxs])
-        #
-        #     score_gap_grams = score_gap_grams.sum()
-        # else:
-        #     score_gap_grams = 0.0
-
-        # score = (score_grams + 0.5 * score_inv_grams + 0.1 * score_gap_grams)
-        # return  score
 
     def all_words_score(self, tokens_idxs, doc_index):
         if tokens_idxs.shape[0] == 0:
@@ -367,29 +322,7 @@ class YandexModel:
         pred = np.zeros(len(self.doc_ids_map))
 
         query = self.extend_query(query)
-        #
-        # # fill tokens indices
-        # query.base_tokens_idxs = np.array([self.vocab.vocab_1[w] for w in query.tokens])
-        # query.synonim_tokens_idxs = np.array([self.vocab.vocab_1[w] for w in query.synonim_tokens])
-        #
-        # # fill base_grams indices for base
-        # base_grams, base_inv_grams, base_gap_grams = get_ngrams(query.tokens,ngram=2, inverted=True, with_gap=True)
-        # base_grams_idxs = self._tokens_to_idxs(base_grams, self.vocab.vocab_2)
-        # base_inv_grams_idxs = self._tokens_to_idxs(base_inv_grams, self.vocab.vocab_2)
-        # base_gap_grams_idxs = self._tokens_to_idxs(base_gap_grams, self.vocab.vocab_2)
-        #
-        # query.base_grams_idxs_list = (base_grams_idxs,base_inv_grams_idxs, base_gap_grams_idxs)
-        #
-        # # fill base_grams indices for synonims
-        # syn_grams, syn_inv_grams, syn_gap_grams = get_ngrams(query.synonim_tokens,ngram=2, inverted=True, with_gap=True)
-        # syn_grams_idxs = self._tokens_to_idxs(syn_grams, self.vocab.vocab_2)
-        # syn_inv_grams_idxs = self._tokens_to_idxs(syn_inv_grams, self.vocab.vocab_2)
-        # syn_gap_grams_idxs = self._tokens_to_idxs(syn_gap_grams, self.vocab.vocab_2)
-        #
-        # query.syn_grams_idxs_list = (syn_grams_idxs,syn_inv_grams_idxs, syn_gap_grams_idxs)
 
-
-        #for doc_id in self.doc_ids_map.dict.keys():
         for doc_id in doc_ids_pred:
             doc_index = self.doc_ids_map[doc_id]
             score = self.score_query_doc(query, doc_id)
@@ -397,37 +330,7 @@ class YandexModel:
 
         return q_id, pred
 
-    def predict_multithread(self, queries:dict, processes = 4, top_n = 10):
-        predicts = dict()
-
-        pool = Pool(processes)
-        tasks = list(queries.values())
-
-        print('---')
-
-        start_time = datetime.now()
-        counter = 0
-        total = len(tasks)
-
-        for res in pool.imap(self.predict_query, tasks):
-            counter += 1
-            q_id, pred = res
-            predicts[q_id] = pred
-            elapsed_time = datetime.now() - start_time
-            predict_time = (elapsed_time / (float(counter) )) * total
-
-            print('counter: {0} , predict_time: {1} , elapsed_time: {2}'.format(counter,predict_time, elapsed_time))
-
-
-        for q_id in predicts.keys():
-            scores = predicts[q_id]
-            top_doc_indexes = np.argsort(scores)[::-1][:top_n]
-            top_doc_ids = [self.doc_ids_map.get_inverted(i) for i in top_doc_indexes]
-            predicts[q_id] = top_doc_ids
-
-        print('all_done!')
-
-        return predicts
+    
 
     def predict_onethread(self, queries:dict, sample_pred: dict,  top_n = 10):
         predicts = dict()
@@ -448,118 +351,6 @@ class YandexModel:
 
         print('all_done!')
         return predicts
-
-
-
-
-    # def predict_query_matrix(self, query: Query):
-    #     q_id = query.id
-    #     pred = np.zeros(len(self.doc_ids_map))
-    #
-    #     query = self.extend_query(query)
-    #
-    #
-    # def predict_matrix(self, queries: dict, top_n=10):
-    #     scores_unigram = np.log(self.icf_unigram) * (self.tf_unigram / (self.tf_unigram + self.k1 + self.dl[:, None] / self.k2))
-    #
-    #     for q_id in queries.keys():
-    #         pass
-
-    # def predict(self, queries: dict, top_n = 10):
-    #
-    #     scores_unigram = np.log(self.icf_unigram) * (self.tf_unigram / (self.tf_unigram + self.k1 + self.dl[:, None] / self.k2))
-    #     scores_unigram += np.log(self.icf_unigram) * (0.2 * self.hdr / (1.0 + self.hdr))
-    #
-    #     log_icf = np.log(self.icf_unigram)
-    #     bin_tf = self.tf_unigram
-    #     bin_tf[bin_tf > 0] = 1.0
-    #
-    #     scores_bigram = 0.3 * (np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[:, 0]])
-    #                           + np.log(self.icf_unigram[self.indxs_bigrams_to_unigrams[:, 1]])) \
-    #               * self.tf_bigram / (1.0 + self.tf_bigram)
-    #
-    #
-    #
-    #
-    #
-    #     pass
-    #
-    #
-    #
-    #
-    # def predict(self, q_matrix_1, q_matrix_2, q_ids, top_n=10):
-    #     pred = {}
-    #     for i in range(q_matrix_1.shape[0]):
-    #         q_row_1 = q_matrix_1[i]
-    #         q_row_2 = q_matrix_2[i]
-    #
-    #         q_len = q_row_1[q_row_1 > 0].shape[0]
-    #
-    #         q_score_1 = np.matmul(self.scores_unigram, q_row_1)
-    #         q_score_2 = np.matmul(self.scores2, q_row_2)
-    #
-    #         all_words_score = 0.2 * np.matmul(self.log_icf, q_row_1) * (
-    #                     0.03 ** (q_len - np.matmul(self.bin_tf_unigram, q_row_1)))
-    #
-    #         q_score = q_score_1 + q_score_2 + all_words_score
-    #
-    #         top_scores_idxs = np.argsort(q_score)[::-1][:top_n]
-    #         top_doc_ids = self.doc_ids[top_scores_idxs]
-    #         pred[q_ids[i]] = top_doc_ids
-    #     return pred
-
-
-
-
-
-
-def _pred_query(args):
-    model, query = args
-    return model.predict_query(query)
-
-from multiprocessing.dummy import Pool as ThreadPool
-
-
-def model_predict_multithread(model, queries:dict, processes = 4, top_n = 10):
-    predicts = dict()
-
-
-    tasks = list(queries.values())
-    tasks = list(zip([model]*len(tasks), tasks))
-
-    print('---')
-
-    start_time = datetime.now()
-    counter = 0
-    total = len(tasks)
-
-    pool = ThreadPool(processes)
-    for res in tqdm(pool.imap(_pred_query, tasks), total=len(tasks)):
-        counter += 1
-        q_id, pred = res
-        predicts[q_id] = pred
-        elapsed_time = datetime.now() - start_time
-        predict_time = (elapsed_time / (float(counter) )) * total
-
-        print('counter: {0} , predict_time: {1} , elapsed_time: {2}'.format(counter,predict_time, elapsed_time))
-
-
-    for q_id in predicts.keys():
-        scores = predicts[q_id]
-        top_doc_indexes = np.argsort(scores)[::-1][:top_n]
-        top_doc_ids = [model.doc_ids_map.get_inverted(i) for i in top_doc_indexes]
-        predicts[q_id] = top_doc_ids
-
-    print('all_done!')
-
-    return predicts
-
-
-PART_WEIGHTS = {TITLE: 3.0, TEXT: 1.0}
-K1 = 1.0
-K2 = 1000.0
-B = 0.75
-
 
 
 
@@ -616,14 +407,7 @@ if __name__ == "__main__":
 
     print('prediction...')
     ya_predict = yandex_model.predict_onethread(queries, sample_pred, top_n=10)
-    #ya_predict = model_predict_multithread(yandex_model, queries, processes=10, top_n=10)
     save_predict(ya_predict, predictions_folder + 'new_ya_prediction.txt')
 
-    fen_pred = load_predict('../fen99_submission.txt')
-    print(calc_ndcg(ya_predict, fen_pred).mean())
-
-    # pred_q1 = yandex_model.predict_query(queries[1])
-    #
-    # print(pred_q1)
 
 
