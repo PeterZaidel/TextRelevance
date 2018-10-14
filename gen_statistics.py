@@ -216,10 +216,10 @@ def _pool_wrapper_gen_stat(args):
 
 if __name__ == "__main__":
     print('started statistics!')
-    data_folder = '../../../Data/hw1/'
-    processed_folder = data_folder + 'new_data/text_documents_2/'
-    fwd_index_folder = data_folder + 'new_data/statistics/fwd_index/'
-    statistics_folder = data_folder + 'new_data/statistics/'
+    data_folder = '/Data/'
+    processed_folder = data_folder + 'text_documents/'
+    fwd_index_folder = data_folder + 'statistics/fwd_index/'
+    statistics_folder = data_folder + 'statistics/'
 
     queries_filename = data_folder + 'queries.numerate_review.txt'
 

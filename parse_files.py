@@ -233,8 +233,8 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
     print('started parsing')
-    data_folder = '../../../Data/hw1/'
-    processed_folder = data_folder + 'new_data/text_documents_2/'
+    data_folder = 'Data/'
+    processed_folder = data_folder + 'text_documents/'
 
 
     documents = pickle.load(open(data_folder + 'documents.pkl', 'rb'))#get_documents(data_folder)

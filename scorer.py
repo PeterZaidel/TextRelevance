@@ -88,7 +88,7 @@ class YandexModel:
         return hdr
 
     def _gen_tf_bigram(self, counts_bigram):
-        return counts_bigram[TEXT].toarray()
+        return counts_bigram[TEXT].toarray() + 3.0 * counts_bigram[TITLE].toarray()
         # sum_counts = np.zeros_like(counts_bigram[TEXT])
         # for pname in [TEXT]:
         #     sum_counts += np.array(counts_bigram[pname])
@@ -145,38 +145,38 @@ class YandexModel:
 
     def unigram_score(self, tokens_idxs, doc_index):
         if tokens_idxs.shape[0] == 0:
-            return  0
+            return 0
 
         tf = self.tf_unigram[doc_index, tokens_idxs]
         hdr = binarize(self.hdr[doc_index, tokens_idxs])
 
         log_icf = self.log_icf_unigram[tokens_idxs]
 
-        score = tf/ (tf + self.k1 + self.dl[doc_index]/ self.k2)
-        score += hdr / (1.0 + hdr)
+        score = tf/(tf + self.k1 + self.dl[doc_index]/ self.k2)
+        score += 3.0 * hdr / (1.0 + hdr)
         score = log_icf * score
         score = score.sum()
         return score
 
-    def unigram_score_bm25f(self, tokens_idxs, doc_index):
-        if tokens_idxs.shape[0] == 0:
-            return 0
-
-        tf = self.tf_unigram[doc_index, tokens_idxs]
-        hdr = self.hdr[doc_index, tokens_idxs]
-
-        log_icf = self.log_icf_unigram[tokens_idxs]
-
-        prk = tf + 3.0 * hdr
-
-        b = 0.75
-        k1 = 1.2
-        k2 = 1000
-
-        score = (prk *(k1 + 1))/ (prk + k1 * (1 - b + b * self.dl[doc_index] / k2))
-        score = log_icf * score
-        score = score.sum()
-        return score
+    # def unigram_score_bm25f(self, tokens_idxs, doc_index):
+    #     if tokens_idxs.shape[0] == 0:
+    #         return 0
+    #
+    #     tf = self.tf_unigram[doc_index, tokens_idxs]
+    #     hdr = self.hdr[doc_index, tokens_idxs]
+    #
+    #     log_icf = self.log_icf_unigram[tokens_idxs]
+    #
+    #     prk = tf + 2.0 * hdr
+    #
+    #     b = 0.75
+    #     k1 = 1.2
+    #     k2 = 1000
+    #
+    #     score = (prk *(k1 + 1))/ (prk + k1 * (1 - b + b * self.dl[doc_index] / k2))
+    #     score = log_icf * score
+    #     score = score.sum()
+    #     return score
 
 
 
@@ -244,8 +244,8 @@ class YandexModel:
             match_count_text.append(len(find_subsequence_match(half, doc_tokens_text)))
             match_count_title.append(len(find_subsequence_match(half, doc_tokens_title)))
 
-        match_count_title = max(match_count_title)
-        match_count_text = max(match_count_text)
+        match_count_title = sum(match_count_title)
+        match_count_text = sum(match_count_text)
 
         tf = match_count_text + 3.0 * match_count_title
         cur_log_icf = self.log_icf_unigram[tokens_idxs]
@@ -271,15 +271,15 @@ class YandexModel:
 
         score = 0
         score += self.unigram_score(base_tokens_idxs, doc_index)
-        score += 0.5 * (self.unigram_score(synonim_tokens_idxs, doc_index))
+        score += 0.4 * (self.unigram_score(synonim_tokens_idxs, doc_index))
 
-        score += 0.1 * self.bigram_score(query.base_grams_idxs_list, doc_index)
-        score += 0.1 * 0.5 * self.bigram_score(query.syn_grams_idxs_list , doc_index)
+        score += 0.2 * self.bigram_score(query.base_grams_idxs_list, doc_index)
+        score += 0.2 * 0.4 * self.bigram_score(query.syn_grams_idxs_list , doc_index)
 
         #score += 0.001 * self.all_words_score(base_tokens_idxs, doc_index)
 
-        score += 0.1 * self.full_phrase_score(base_tokens, base_tokens_idxs, doc_parts)
-        score += 0.02 * self.half_phrase_score(base_tokens, base_tokens_idxs, doc_parts)
+        score += 0.3 * self.full_phrase_score(base_tokens, base_tokens_idxs, doc_parts)
+        #score += 0.01 * self.half_phrase_score(base_tokens, base_tokens_idxs, doc_parts)
 
 
         # score += self.pairs_weight * self.bigram_score(base_tokens, doc_index)
@@ -330,7 +330,7 @@ class YandexModel:
 
         return q_id, pred
 
-    
+
 
     def predict_onethread(self, queries:dict, sample_pred: dict,  top_n = 10):
         predicts = dict()
@@ -356,12 +356,12 @@ class YandexModel:
 
 if __name__ == "__main__":
     print('started scorer!')
-    data_folder = '../../../Data/hw1/'
-    processed_folder = data_folder + 'new_data/text_documents/'
-    fwd_index_folder = data_folder + 'new_data/statistics/fwd_index/'
-    statistics_folder = data_folder + 'new_data/statistics/'
+    data_folder = 'Data/'
+    processed_folder = data_folder + 'text_documents/'
+    fwd_index_folder = data_folder + 'statistics/fwd_index/'
+    statistics_folder = data_folder + 'statistics/'
 
-    predictions_folder = data_folder + 'new_data/predictions/'
+    predictions_folder = data_folder + 'predictions/'
 
     queries_filename = data_folder + 'queries.numerate_review.txt'
 
