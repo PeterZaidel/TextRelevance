@@ -219,7 +219,7 @@ def get_documents(data_folder, save_text=False):
     documents = Documents(data_folder)
     errors = []
 
-    for d in docs:
+    for d in tqdm(docs):
         if d.url not in urls_dict.inverted_dict:
             errors.append(d.url)
             continue
@@ -230,15 +230,15 @@ def get_documents(data_folder, save_text=False):
 
         documents.add(d)
 
-    return documents, errors
+    return documents
 
-
+from tqdm import tqdm
 def read_documents(data_folder, save_text=False):
     content_folder = data_folder + 'content/'
     documents = []
-    for folder_path in os.listdir(content_folder):
+    for folder_path in tqdm(os.listdir(content_folder)):
         filepath = content_folder + folder_path + '/'
-        for fname in os.listdir(filepath):
+        for fname in tqdm(os.listdir(filepath)):
             doc = Document(data_folder, 'content/' + folder_path + '/', fname)
             doc.extract_url()
             documents.append(doc)

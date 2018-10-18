@@ -228,21 +228,30 @@ def read_urls_dict(filename):
 
 import pickle
 from multiprocessing import Pool
-
+from read_data import get_documents
 from tqdm import tqdm
+from utils import create_dir
+
+
 
 if __name__ == "__main__":
+
     print('started parsing')
+
+
     data_folder = 'Data/'
     processed_folder = data_folder + 'text_documents/'
 
+    create_dir(processed_folder)
 
-    documents = pickle.load(open(data_folder + 'documents.pkl', 'rb'))#get_documents(data_folder)
+    documents = get_documents(data_folder)
+    pickle.dump(documents, open(data_folder + 'documents.pkl', 'wb'))
+
     documents = documents.docs
     for d in documents:
         d.data_path = data_folder
 
-    pool = Pool(8)
+    pool = Pool(16)
 
     tasks = list(zip(documents, [processed_folder] * len(documents)))
 

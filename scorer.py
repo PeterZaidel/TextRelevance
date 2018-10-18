@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(0, '')
 
 from gen_statistics import  Query, Vocab, get_ngrams, load_queries, load_doc_txt, \
     open_fwd_index, TEXT, TITLE
@@ -353,7 +352,7 @@ class YandexModel:
         return predicts
 
 
-
+from utils import create_dir
 if __name__ == "__main__":
     print('started scorer!')
     data_folder = 'Data/'
@@ -362,6 +361,7 @@ if __name__ == "__main__":
     statistics_folder = data_folder + 'statistics/'
 
     predictions_folder = data_folder + 'predictions/'
+    create_dir(predictions_folder)
 
     queries_filename = data_folder + 'queries.numerate_review.txt'
 

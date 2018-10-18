@@ -3,7 +3,6 @@ TITLE = 'title'
 TEXT = 'text'
 
 import sys
-sys.path.insert(0, '../')
 
 from utils import TwoWayDict
 from tokenization import Tokenizer, Lemmatizer
@@ -214,12 +213,17 @@ def _pool_wrapper_gen_stat(args):
     doc_id, content_folder, fwd_index_folder, vocab = args
     return generate_statistics(doc_id, content_folder, fwd_index_folder, vocab)
 
+from utils import create_dir
 if __name__ == "__main__":
     print('started statistics!')
-    data_folder = '/Data/'
+    data_folder = 'Data/'
     processed_folder = data_folder + 'text_documents/'
     fwd_index_folder = data_folder + 'statistics/fwd_index/'
     statistics_folder = data_folder + 'statistics/'
+
+    create_dir(statistics_folder)
+    create_dir(fwd_index_folder)
+
 
     queries_filename = data_folder + 'queries.numerate_review.txt'
 
@@ -246,19 +250,6 @@ if __name__ == "__main__":
 
 
     document_lengths = np.zeros(len(doc_ids_map))
-
-
-
-
-    # --- TEST ----
-    # doc_id, parts_counts_1, parts_counts_2 = generate_statistics(documents[0].id,
-    #                                                              processed_folder,
-    #                                                              fwd_index_folder, vocab)
-    # doc_index = doc_ids_map[doc_id]
-    # for p_name in unigram_counts.keys():
-    #     unigram_counts[p_name][doc_index] = parts_counts_1[p_name]
-    #     bigram_counts[p_name][doc_index] = parts_counts_2[p_name]
-
 
     doc_ids = list(doc_ids_map.dict.keys())
 
