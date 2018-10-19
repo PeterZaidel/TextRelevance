@@ -365,7 +365,7 @@ if __name__ == "__main__":
 
     queries_filename = data_folder + 'queries.numerate_review.txt'
 
-    sample_pred = load_predict('sample_sabmission.txt')
+    sample_pred = load_predict(data_folder + 'sample_sabmission.txt')
 
     queries, vocab = load_queries(queries_filename)
 
