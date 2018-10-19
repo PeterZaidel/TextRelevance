@@ -5,4 +5,5 @@
 Запуск:
 Распаковать архив content.tar.gz в папку Data/content
 Файл urls.numerate.txt положить в папку Data
+Файл sample_sabmission.txt  положить в папку Data
 Запустить start.sh
